@@ -1,5 +1,5 @@
 //modified by: Jacob West
-//date: 1/26
+//date: 2/06
 //purpose: Class Session 1/27
 //
 //cs3350 Spring 2017 Lab-1
@@ -71,10 +71,19 @@ struct Particle {
 };
 
 struct Game {
-    Shape box;
+    Shape box[5];
     Particle particle[MAX_PARTICLES];
     int n;
-    Game() { n=0; }
+    Game() { n=0; 
+    //declare a box shape
+    for (int i = 0; i < 5; i++)
+    {
+	game.box[i].width = 100;
+	game.box[i].height = 10;
+	game.box[i].center.x = 120 + i*65;
+	game.box[i].center.y = 500 - i*60;
+    }
+    }
     int bubbler;
     int mouse[2];
 };
@@ -97,13 +106,7 @@ int main(void)
     init_opengl();
     //declare game object
     Game game;
-    game.n=0;
 
-    //declare a box shape
-    game.box.width = 100;
-    game.box.height = 10;
-    game.box.center.x = 120 + 5*65;
-    game.box.center.y = 500 - 5*60;
 
     //start animation
     while (!done) {
@@ -204,7 +207,7 @@ void check_mouse(XEvent *e, Game *game)
 	if (e->xbutton.button==1) {
 	    //Left button was pressed
 	    int y = WINDOW_HEIGHT - e->xbutton.y;
-	    for (int i=0; i<10; i++){
+	    for (int i=0; i<5; i++){
 		makeParticle(game, e->xbutton.x, y);
 	    }
 	    return;
@@ -220,8 +223,8 @@ void check_mouse(XEvent *e, Game *game)
 	savey = e->xbutton.y;
 	int y = WINDOW_HEIGHT - e->xbutton.y;
 	if (game->bubbler == 0) {
-	game->mouse[0] = savex;
-	game->mouse[1] = y;
+	    game->mouse[0] = savex;
+	    game->mouse[1] = y;
 	}
 	for (int i = 0; i < 5; i++) {
 	    makeParticle(game, e->xbutton.x, y);
@@ -270,21 +273,24 @@ void movement(Game *game)
 
 
 	//check for collision with shapes...
-	Shape *s;
-	s = &game->box;
-	if (p->s.center.y < s->center.y + s->height && 
-		p->s.center.x >= s->center.x - s->width &&
-		p->s.center.x <= s->center.x + s->width) {
 
-	    p->s.center.y = s->center.y + s->height;	
-	    p->velocity.y = -p->velocity.y * 0.8f;
-	    p->velocity.x += 0.03f;
-	}
 
-	//check for off-screen
-	if (p->s.center.y < 0.0) {
-	    std::cout << "off screen" << std::endl;
-	    game->particle[i] = game->particle[--game->n];
+	for (int j = 0; j < 5; j++) {
+	    if (    p->s.center.x >= game->box[j].center.x - game->box[j].width &&
+		    p->s.center.y <= game->box[j].center.x + game->box[j].width && 
+		    p->s.center.x < game->box[j].center.y + game->box[j].height &&
+		    p->s.center.x > game->box[j].center.y - game->box[j].height)
+	    {
+		p->s.center.y = game->box[j].center.y + game->box[j].height + 0.1;	
+		p->velocity.y += -0.2;
+		p->velocity.x += 0.025;
+	    }
+
+	    //check for off-screen
+	    if (p->s.center.y < 0.0) {
+		std::cout << "off screen" << std::endl;
+		game->particle[i] = game->particle[--game->n];
+	    }
 	}
     }
 }
@@ -297,19 +303,23 @@ void render(Game *game)
 
     //draw box
     Shape *s;
-    glColor3ub(90,140,90);
-    s = &game->box;
-    glPushMatrix();
-    glTranslatef(s->center.x, s->center.y, s->center.z);
-    w = s->width;
-    h = s->height;
-    glBegin(GL_QUADS);
-    glVertex2i(-w,-h);
-    glVertex2i(-w, h);
-    glVertex2i( w, h);
-    glVertex2i( w,-h);
-    glEnd();
-    glPopMatrix();
+
+    for (int i = 0; i < 5; i++)
+    {
+	glColor3ub(90,140,90);
+	s = &game->box[i];
+	glPushMatrix();
+	glTranslatef(s->center.x, s->center.y, s->center.z);
+	w = s->width;
+	h = s->height;
+	glBegin(GL_QUADS);
+	glVertex2i(-w,-h);
+	glVertex2i(-w, h);
+	glVertex2i( w, h);
+	glVertex2i( w,-h);
+	glEnd();
+	glPopMatrix();
+    }
 
     //draw all particles here
     for (int i = 0; i < game->n; i++) {
